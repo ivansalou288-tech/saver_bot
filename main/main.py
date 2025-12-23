@@ -20,16 +20,16 @@ USER_ID = 1240656726
 router = Router(name=__name__)
 
 
-def update_balans(user: int, balance: int, games: int, streak: int, points: int):
+def update_balans(user: int, balance: int, games: int, streak: int, points: int, message_id: int):
     connection = sqlite3.connect(messages_path)
     cursor = connection.cursor()
     try:
-        cursor.execute('INSERT INTO balanses (user, balance, games, streak, points) VALUES (?, ?, ?, ?, ?)',
-                       (user, balance, games, streak, points))
+        cursor.execute('INSERT INTO balanses (user, balance, games, streak, points, message_id) VALUES (?, ?, ?, ?, ?, ?)',
+                       (user, balance, games, streak, points, message_id))
         connection.commit()
     except sqlite3.IntegrityError:
-        cursor.execute('UPDATE balanses SET balance = ?, games = ?, streak = ?, points = ? WHERE user = ?',
-                       (balance, games, streak, points, user))
+        cursor.execute('UPDATE balanses SET balance = ?, games = ?, streak = ?, points = ?, message_id = ? WHERE user = ?',
+                       (balance, games, streak, points, message_id, user))
         connection.commit()
 
 
@@ -190,6 +190,22 @@ async def business_message(message: types.Message, bot: Bot):
 
      #* Проверяем на то что сообщение содержит баланс, катки, стрик, бал
     text = message.text.lower()
+    
+    # Команда .бал
+    if text == '.бал':
+        balance_message_id = cursor.execute('SELECT message_id FROM balanses WHERE user = ?', (user,)).fetchone()
+        if balance_message_id and balance_message_id[0]:
+            
+            await bot.send_message(message.chat.id, '.', reply_to_message_id=balance_message_id[0], business_connection_id=message.business_connection_id)
+
+        try:
+            await message.delete()
+            
+        except Exception:
+            pass
+        connection.close()
+        return
+    
     is_balance = True
 
     # Извлекаем баланс
@@ -217,7 +233,7 @@ async def business_message(message: types.Message, bot: Bot):
     except (IndexError, ValueError):
         points = None
     if is_balance:
-        update_balans(user, balance, games, streak, points)
+        update_balans(user, balance, games, streak, points, message.message_id)
         try:
             await bot.pin_chat_message(message.chat.id, message.message_id, business_connection_id=message.business_connection_id)
         except Exception as e:
@@ -257,13 +273,13 @@ async def business_message(message: types.Message, bot: Bot):
         
         connection = sqlite3.connect(messages_path)
         cursor = connection.cursor()
-        cursor.execute('UPDATE balanses SET balance = balance + ? WHERE user = ?', (count, user))
-        connection.commit()
-        cursor.execute('UPDATE balanses SET games = games + ? WHERE user = ?', (games, user))
+        cursor.execute('UPDATE balanses SET balance = balance + ?, games = games + ? WHERE user = ?', (count, games, user))
         connection.commit()
         new_balance_info = get_balance_info(user)
         await bot.send_message(user, f'Ваш баланс был увеличен на {count}.\n{new_balance_info}')
-        await message.answer(new_balance_info)
+        mess_id = (await message.answer(new_balance_info)).message_id
+        cursor.execute('UPDATE balanses SET message_id = ? WHERE user = ?', (mess_id, user))
+        connection.commit()
         await message.answer('НАПИСАЛ БОТ! ПРОВЕРИТЬ!')
 
 async def main() -> None:
