@@ -48,7 +48,8 @@ def update_streak(user: int, text: str, pluses: list, games: int, plus_count: in
     except KeyError:
         return
 
-
+    cursor.execute('UPDATE balanses SET streak = ? WHERE user = ?', (streak_new, user))
+    connection.commit()
 
 
 
