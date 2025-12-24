@@ -24,10 +24,10 @@ router = Router(name=__name__)
 def update_streak(user: int, text: str, pluses: list, games: int, plus_count: int):
     connection = sqlite3.connect(main_path)
     cursor = connection.cursor()
-    rang = int(cursor.execute('SELECT rang FROM [1002274082016] WHERE tg_id = ?', (user,)).fetchone())
+    rang = int(cursor.execute('SELECT rang FROM [1002274082016] WHERE tg_id = ?', (user,)).fetchone()[0])
     connection = sqlite3.connect(messages_path)
     cursor = connection.cursor()
-    streak_old = cursor.execute('SELECT streak FROM balanses WHERE user = ?', (user,)).fetchall[0][0]
+    streak_old = int(cursor.execute('SELECT streak FROM balanses WHERE user = ?', (user,)).fetchone()[0])
     streak_new = streak_old
 
     plus_number = {4: [75, 30, 35], 3: [60, 65, 30, 35], 2: [60, 65, 30, 35]}
@@ -195,7 +195,8 @@ async def deleted_business_messages(message: types.Message, bot: Bot):
         if video_note:
             await bot.send_video_note(user_id, video_note)
             await bot.send_message(user_id, f'🗑 Это видеосообщение было удалено\nОт: {user_link}', parse_mode=ParseMode.MARKDOWN)
-        connection.close()
+    
+    connection.close()
     
 @router.business_message()
 async def business_message(message: types.Message, bot: Bot):
