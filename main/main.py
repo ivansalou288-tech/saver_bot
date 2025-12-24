@@ -33,13 +33,18 @@ def update_streak(user: int, text: str, pluses: list, games: int, plus_count: in
     plus_number = {4: [75, 30, 35], 3: [60, 65, 30, 35], 2: [60, 65, 30, 35]}
     try:
         if games != len(pluses):
-            sr_plus = sum(int(i) for i in pluses) / games
+            print('first')
+            try:
+                sr_plus = sum(int(i) for i in pluses) / games
+            except ZeroDivisionError:
+                return
             if sr_plus not in plus_number[rang]:
                 streak_new = 0
 
             else:
                 streak_new += games
         else:
+            print('second')
             for plus in pluses:
                 if int(plus) in plus_number[rang]:
                     streak_new += 1
@@ -221,8 +226,8 @@ async def business_message(message: types.Message, bot: Bot):
         return
 
 
-    if message.chat.id != 8015726709:
-        return
+    # if message.chat.id != 8015726709:
+    #     return
 
      #* Проверяем на то что сообщение содержит баланс, катки, стрик, бал
     text = message.text.lower()
@@ -310,6 +315,7 @@ async def business_message(message: types.Message, bot: Bot):
         
         connection = sqlite3.connect(messages_path)
         cursor = connection.cursor()
+        update_streak(user, text, pluses, games, plus_count)
         cursor.execute('UPDATE balanses SET balance = balance + ?, games = games + ? WHERE user = ?', (count, games, user))
         connection.commit()
         new_balance_info = get_balance_info(user)
@@ -317,7 +323,6 @@ async def business_message(message: types.Message, bot: Bot):
         mess_id = (await message.answer(new_balance_info)).message_id
         cursor.execute('UPDATE balanses SET message_id = ? WHERE user = ?', (mess_id, user))
         connection.commit()
-        update_streak(user, text, pluses, games, plus_count)
         await message.answer('НАПИСАЛ БОТ! ПРОВЕРИТЬ!')
 
 async def main() -> None:
