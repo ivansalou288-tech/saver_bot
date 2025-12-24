@@ -12,12 +12,46 @@ from aiogram.enums.parse_mode import ParseMode
 
 curent_path = (Path(__file__)).parent.parent
 messages_path = curent_path / 'databases' / 'messages.db'
+curent_main_path = (Path(__file__)).parent.parent.parent
+main_path = curent_main_path / 'Zam Helper' / 'databases' / 'Base_bot.db'
 
 # Add your bot token here
 TOKEN = "8514363728:AAGNqftzIiVUx83I8oJ36q0ZSotDzpAG8tM"
 USER_ID = 1240656726
  
 router = Router(name=__name__)
+
+def update_streak(user: int, text: str, pluses: list, games: int, plus_count: int):
+    connection = sqlite3.connect(main_path)
+    cursor = connection.cursor()
+    rang = int(cursor.execute('SELECT rang FROM [1002274082016] WHERE tg_id = ?', (user,)).fetchone())
+    connection = sqlite3.connect(messages_path)
+    cursor = connection.cursor()
+    streak_old = cursor.execute('SELECT streak FROM balanses WHERE user = ?', (user,)).fetchall[0][0]
+    streak_new = streak_old
+
+    plus_number = {4: [75, 30, 35], 3: [60, 65, 30, 35], 2: [60, 65, 30, 35]}
+    try:
+        if games != len(pluses):
+            sr_plus = sum(int(i) for i in pluses) / games
+            if sr_plus not in plus_number[rang]:
+                streak_new = 0
+
+            else:
+                streak_new += games
+        else:
+            for plus in pluses:
+                if int(plus) in plus_number[rang]:
+                    streak_new += 1
+                else:
+                    streak_new = 0
+    except KeyError:
+        return
+
+
+
+
+
 
 
 def update_balans(user: int, balance: int, games: int, streak: int, points: int, message_id: int):
@@ -185,8 +219,8 @@ async def business_message(message: types.Message, bot: Bot):
         return
 
 
-    # if message.chat.id != 8015726709:
-    #     return
+    if message.chat.id != 8015726709:
+        return
 
      #* Проверяем на то что сообщение содержит баланс, катки, стрик, бал
     text = message.text.lower()
@@ -252,15 +286,16 @@ async def business_message(message: types.Message, bot: Bot):
             has_invalid_chars = any(char not in allowed_chars for char in text)
             
             if has_invalid_chars:
-                await message.answer('не плюс')
                 return
             count = 0
             games = 0
+            pluses = []
             for i in range(plus_count):
                 pluss = text.split('+')[i+1].split()[0]
                 print(pluss)
                 if int(pluss) >= 10:
                     count+=int(pluss)
+                    pluses.append(pluss)
                 else:
                     games += int(pluss)
         else:
@@ -280,6 +315,7 @@ async def business_message(message: types.Message, bot: Bot):
         mess_id = (await message.answer(new_balance_info)).message_id
         cursor.execute('UPDATE balanses SET message_id = ? WHERE user = ?', (mess_id, user))
         connection.commit()
+        update_streak(user, text, pluses, games, plus_count)
         await message.answer('НАПИСАЛ БОТ! ПРОВЕРИТЬ!')
 
 async def main() -> None:
