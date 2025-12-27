@@ -14,9 +14,10 @@ curent_path = (Path(__file__)).parent.parent
 messages_path = curent_path / 'databases' / 'messages.db'
 curent_main_path = (Path(__file__)).parent.parent.parent
 main_path = curent_main_path / 'Zam Helper' / 'databases' / 'Base_bot.db'
+import secret
 
 # Add your bot token here
-TOKEN = "8514363728:AAGNqftzIiVUx83I8oJ36q0ZSotDzpAG8tM"
+TOKEN = secret.TOKEN
 USER_ID = 1240656726
  
 router = Router(name=__name__)
