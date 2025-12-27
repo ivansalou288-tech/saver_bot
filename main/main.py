@@ -28,7 +28,8 @@ def update_streak(user: int, text: str, pluses: list, games: int, plus_count: in
     rang = int(cursor.execute('SELECT rang FROM [1002274082016] WHERE tg_id = ?', (user,)).fetchone()[0])
     connection = sqlite3.connect(messages_path)
     cursor = connection.cursor()
-    streak_old = int(cursor.execute('SELECT streak FROM balanses WHERE user = ?', (user,)).fetchone()[0])
+    result = cursor.execute('SELECT streak FROM balance_history WHERE user = ? ORDER BY created_at DESC LIMIT 1', (user,)).fetchone()
+    streak_old = int(result[0]) if result and result[0] is not None else 0
     streak_new = streak_old
 
     plus_number = {4: [75, 30, 35], 3: [60, 65, 30, 35], 2: [60, 65, 30, 35]}
@@ -54,8 +55,19 @@ def update_streak(user: int, text: str, pluses: list, games: int, plus_count: in
     except KeyError:
         return
 
-    cursor.execute('UPDATE balanses SET streak = ? WHERE user = ?', (streak_new, user))
+    # Обновляем стрик в последней записи
+    cursor.execute('''
+        UPDATE balance_history 
+        SET streak = ? 
+        WHERE id = (
+            SELECT id FROM balance_history 
+            WHERE user = ? 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        )
+    ''', (streak_new, user))
     connection.commit()
+    connection.close()
 
 
 
@@ -64,20 +76,36 @@ def update_streak(user: int, text: str, pluses: list, games: int, plus_count: in
 def update_balans(user: int, balance: int, games: int, streak: int, points: int, message_id: int):
     connection = sqlite3.connect(messages_path)
     cursor = connection.cursor()
-    try:
-        cursor.execute('INSERT INTO balanses (user, balance, games, streak, points, message_id) VALUES (?, ?, ?, ?, ?, ?)',
-                       (user, balance, games, streak, points, message_id))
-        connection.commit()
-    except sqlite3.IntegrityError:
-        cursor.execute('UPDATE balanses SET balance = ?, games = ?, streak = ?, points = ?, message_id = ? WHERE user = ?',
-                       (balance, games, streak, points, message_id, user))
-        connection.commit()
+    
+    # Добавляем новый баланс в историю
+    cursor.execute('INSERT INTO balance_history (user, balance, games, streak, points, message_id) VALUES (?, ?, ?, ?, ?, ?)',
+                   (user, balance, games, streak, points, message_id))
+    
+    # Удаляем старые записи, оставляя только последние 3
+    cursor.execute('''
+        DELETE FROM balance_history 
+        WHERE user = ? AND id NOT IN (
+            SELECT id FROM balance_history 
+            WHERE user = ? 
+            ORDER BY created_at DESC 
+            LIMIT 3
+        )
+    ''', (user, user))
+    
+    connection.commit()
+    connection.close()
 
 
 def get_balance_info(user: int) -> str:
     connection = sqlite3.connect(messages_path)
     cursor = connection.cursor()
-    cursor.execute('SELECT balance, games, streak, points FROM balanses WHERE user = ?', (user,))
+    cursor.execute('''
+        SELECT balance, games, streak, points 
+        FROM balance_history 
+        WHERE user = ? 
+        ORDER BY created_at DESC 
+        LIMIT 1
+    ''', (user,))
     result = cursor.fetchone()
     connection.close()
     
@@ -93,6 +121,39 @@ def get_balance_info(user: int) -> str:
         output += f"\nБаллы {points}"
     
     return output
+
+
+def delete_last_balance(user: int) -> bool:
+    """Удаляет последний баланс и откатывается к предыдущему. Возвращает True если удаление успешно."""
+    connection = sqlite3.connect(messages_path)
+    cursor = connection.cursor()
+    
+    # Проверяем количество записей
+    cursor.execute('SELECT COUNT(*) FROM balance_history WHERE user = ?', (user,))
+    count = cursor.fetchone()[0]
+    
+    if count <= 1:
+        connection.close()
+        return False  # Нельзя удалить последнюю запись
+    # mess_id = cursor.execute('SELECT message_id FROM balance_history WHERE user = ? ORDER BY created_at DESC LIMIT 1', (user, )).fetchone()[0]
+    # try:
+    #     await bot.delete_message(chat_id=8015726709, message_id=mess_id)
+    # except Exception as e:
+    #     await bot.send_message(chat_id=1240656726, text=e)
+    # Удаляем последнюю запись
+    cursor.execute('''
+        DELETE FROM balance_history 
+        WHERE id = (
+            SELECT id FROM balance_history 
+            WHERE user = ? 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        )
+    ''', (user,))
+    
+    connection.commit()
+    connection.close()
+    return True
     
   
  
@@ -235,16 +296,33 @@ async def business_message(message: types.Message, bot: Bot):
     
     # Команда .бал
     if text == '.бал':
-        balance_message_id = cursor.execute('SELECT message_id FROM balanses WHERE user = ?', (user,)).fetchone()
-        if balance_message_id and balance_message_id[0]:
-            
-            await bot.send_message(message.chat.id, '.', reply_to_message_id=balance_message_id[0], business_connection_id=message.business_connection_id)
-
+        result = cursor.execute('''
+            SELECT message_id FROM balance_history 
+            WHERE user = ? 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        ''', (user,)).fetchone()
+        if result and result[0]:
+            await bot.send_message(message.chat.id, '.', reply_to_message_id=result[0], business_connection_id=message.business_connection_id)
         try:
             await message.delete()
-            
         except Exception:
             pass
+        connection.close()
+        return
+    
+    # Команда .удалить - удаляет последний баланс и откатывается к предыдущему
+    if text == '.удалить':
+        if delete_last_balance(user):
+            new_balance_info = get_balance_info(user)
+            await bot.send_message(user, f'Последний баланс удален. Откат к предыдущему:\n{new_balance_info}')
+        else:
+            await bot.send_message(user, 'Невозможно удалить последний баланс. Должна остаться хотя бы одна запись.')
+        try:
+            # await message.delete()
+            await bot.delete_message(chat_id=8015726709, message_id=message.message_id)
+        except Exception as e:
+            await bot.send_message(user, f"Failed to delete message: {e}")
         connection.close()
         return
     
@@ -289,6 +367,9 @@ async def business_message(message: types.Message, bot: Bot):
         # Проверяем количество знаков '+' и наличие недопустимых символов
         plus_count = text.count('+')
         print(plus_count)
+        pluses = []
+        games = 0
+        
         if plus_count > 1:
             allowed_chars = set(f'0123456789+-*/=.,₽р\n ')
             has_invalid_chars = any(char not in allowed_chars for char in text)
@@ -296,8 +377,6 @@ async def business_message(message: types.Message, bot: Bot):
             if has_invalid_chars:
                 return
             count = 0
-            games = 0
-            pluses = []
             for i in range(plus_count):
                 pluss = text.split('+')[i+1].split()[0]
                 print(pluss)
@@ -310,20 +389,44 @@ async def business_message(message: types.Message, bot: Bot):
             try:
                 count_part = text.split('+')[1].split()[0]
                 count = int(count_part.replace('₽', '').replace('р', ''))
-                games = 0
             except (IndexError, ValueError):
                 return
         
         connection = sqlite3.connect(messages_path)
         cursor = connection.cursor()
+
         update_streak(user, text, pluses, games, plus_count)
-        cursor.execute('UPDATE balanses SET balance = balance + ?, games = games + ? WHERE user = ?', (count, games, user))
-        connection.commit()
-        new_balance_info = get_balance_info(user)
-        await bot.send_message(user, f'Ваш баланс был увеличен на {count}.\n{new_balance_info}')
-        mess_id = (await message.answer(new_balance_info)).message_id
-        cursor.execute('UPDATE balanses SET message_id = ? WHERE user = ?', (mess_id, user))
-        connection.commit()
+        
+        # Получаем текущий баланс
+        result = cursor.execute('''
+            SELECT balance, games, streak, points 
+            FROM balance_history 
+            WHERE user = ? 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        ''', (user,)).fetchone()
+        
+        if result:
+            old_balance, old_games, old_streak, old_points = result
+            new_balance = old_balance + count
+            new_games = old_games + games
+            
+            # Создаем новую запись с обновленным балансом
+            mess_id = 0
+            update_balans(user, new_balance, new_games, old_streak, old_points, mess_id)
+            mess_id = (await message.answer(get_balance_info(user))).message_id
+            cursor.execute('''
+                UPDATE balance_history
+                SET message_id = ?
+                WHERE user = ?
+                AND balance = ?
+            ''', (mess_id, user, new_balance))
+
+
+            
+            await bot.send_message(user, f'Ваш баланс был увеличен на {count}.\n{get_balance_info(user)}')
+        
+        connection.close()
         try:
             await bot.pin_chat_message(message.chat.id, mess_id, business_connection_id=message.business_connection_id)
         except Exception as e:
