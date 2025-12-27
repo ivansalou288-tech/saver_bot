@@ -324,7 +324,12 @@ async def business_message(message: types.Message, bot: Bot):
         mess_id = (await message.answer(new_balance_info)).message_id
         cursor.execute('UPDATE balanses SET message_id = ? WHERE user = ?', (mess_id, user))
         connection.commit()
-        await message.answer('НАПИСАЛ БОТ! ПРОВЕРИТЬ!')
+        try:
+            await bot.pin_chat_message(message.chat.id, mess_id, business_connection_id=message.business_connection_id)
+        except Exception as e:
+            await bot.send_message(user, f"Failed to pin message: {e}")
+            return
+        
 
 async def main() -> None:
  
