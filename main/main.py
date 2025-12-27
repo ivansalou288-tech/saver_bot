@@ -238,16 +238,55 @@ async def deleted_business_messages(message: types.Message, bot: Bot):
     user_id = cursor.execute('SELECT user FROM connections WHERE id = ?', (message.business_connection_id,)).fetchone()[0]
     if user_id != 1240656726:
         return
+    
     for message_id in message.message_ids:
-        result = cursor.execute("SELECT text, photo, video, voice, audio, document, video_note FROM messages WHERE mess = ? AND conn = ? AND chat = ?", 
-                               (message_id, message.business_connection_id, message.chat.id)).fetchone()
+        # Проверяем, является ли удаленное сообщение балансом
+        balance_result = cursor.execute(
+            "SELECT id FROM balance_history WHERE message_id = ? AND user = ?",
+            (message_id, user_id)
+        ).fetchone()
+        
+        if balance_result:
+            # Это баланс - откатываемся на предыдущий
+            cursor.execute(
+                "DELETE FROM balance_history WHERE id = ?",
+                (balance_result[0],)
+            )
+            connection.commit()
+            
+            # Находим предыдущий баланс (пропуская удаленные)
+            prev_balance = cursor.execute("""
+                SELECT message_id FROM balance_history 
+                WHERE user = ? AND message_id IS NOT NULL AND message_id != 0
+                ORDER BY created_at DESC 
+                LIMIT 1
+            """, (user_id,)).fetchone()
+            
+            if prev_balance and prev_balance[0]:
+                try:
+                    await bot.pin_chat_message(
+                        message.chat.id, 
+                        prev_balance[0], 
+                        business_connection_id=message.business_connection_id
+                    )
+                except Exception:
+                    pass
+            
+            await bot.send_message(user_id, f'Баланс откачен на предыдущий:\n{get_balance_info(user_id)}')
+            continue
+        
+        # Обычное сообщение - стандартная обработка
+        result = cursor.execute(
+            "SELECT text, photo, video, voice, audio, document, video_note FROM messages WHERE mess = ? AND conn = ? AND chat = ?", 
+            (message_id, message.business_connection_id, message.chat.id)
+        ).fetchone()
+        
         if not result:
             continue
             
         user_link = f'[{message.chat.full_name}](https://t.me/{message.chat.username})'
         text, photo, video, voice, audio, document, video_note = result
         
-
         if text:
             await bot.send_message(user_id, f'🗑 Это сообщение было удалено {user_link}\n\n```{message.chat.full_name}\n\n{text}```', parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
         if photo:
