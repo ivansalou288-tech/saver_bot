@@ -261,7 +261,7 @@ async def deleted_business_messages(message: types.Message, bot: Bot):
                 ORDER BY created_at DESC 
                 LIMIT 1
             """, (user_id,)).fetchone()
-            
+            print('tetete')
             if prev_balance and prev_balance[0]:
                 try:
                     await bot.pin_chat_message(
@@ -341,6 +341,8 @@ async def business_message(message: types.Message, bot: Bot):
             ORDER BY created_at DESC 
             LIMIT 1
         ''', (user,)).fetchone()
+        print('tetetee')
+        print(result)
         if result and result[0]:
             await bot.send_message(message.chat.id, '.', reply_to_message_id=result[0], business_connection_id=message.business_connection_id)
         try:
@@ -453,6 +455,7 @@ async def business_message(message: types.Message, bot: Bot):
             # Создаем новую запись с обновленным балансом
             mess_id = 0
             update_balans(user, new_balance, new_games, old_streak, old_points, mess_id)
+            connection.commit()
             mess_id = (await message.answer(get_balance_info(user))).message_id
             cursor.execute('''
                 UPDATE balance_history
@@ -460,6 +463,8 @@ async def business_message(message: types.Message, bot: Bot):
                 WHERE user = ?
                 AND balance = ?
             ''', (mess_id, user, new_balance))
+            connection.commit()
+
 
 
             
