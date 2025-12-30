@@ -327,8 +327,8 @@ async def business_message(message: types.Message, bot: Bot):
         return
 
 
-    # if message.chat.id != 8015726709:
-    #     return
+    if message.chat.id != 8015726709:
+        return
 
      #* Проверяем на то что сообщение содержит баланс, катки, стрик, бал
     text = message.text.lower()
