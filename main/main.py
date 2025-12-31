@@ -476,6 +476,53 @@ async def business_message(message: types.Message, bot: Bot):
         except Exception as e:
             await bot.send_message(user, f"Failed to pin message: {e}")
             return
+    
+    #* Проверяем на то что сообщение содержит -
+    
+    if text[0] == '-':
+        try:
+            count_part = text.split('-')[1].split()[0]
+            count = int(count_part.replace('₽', '').replace('р', ''))
+        except (IndexError, ValueError):
+            return
+        
+        connection = sqlite3.connect(messages_path)
+        cursor = connection.cursor()
+        
+        # Получаем текущий баланс
+        result = cursor.execute('''
+            SELECT balance, games, streak, points 
+            FROM balance_history 
+            WHERE user = ? 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        ''', (user,)).fetchone()
+        
+        if result:
+            old_balance, old_games, old_streak, old_points = result
+            new_balance = old_balance - count
+            
+            # Создаем новую запись с обновленным балансом
+            mess_id = 0
+            update_balans(user, new_balance, old_games, old_streak, old_points, mess_id)
+            connection.commit()
+            mess_id = (await message.answer(get_balance_info(user))).message_id
+            cursor.execute('''
+                UPDATE balance_history
+                SET message_id = ?
+                WHERE user = ?
+                AND balance = ?
+            ''', (mess_id, user, new_balance))
+            connection.commit()
+            
+            await bot.send_message(user, f'Ваш баланс был уменьшен на {count}.\n{get_balance_info(user)}')
+        
+        connection.close()
+        try:
+            await bot.pin_chat_message(message.chat.id, mess_id, business_connection_id=message.business_connection_id)
+        except Exception as e:
+            await bot.send_message(user, f"Failed to pin message: {e}")
+            return
         
 
 async def main() -> None:
