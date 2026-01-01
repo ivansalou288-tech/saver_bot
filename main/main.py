@@ -327,8 +327,8 @@ async def business_message(message: types.Message, bot: Bot):
             await bot.send_message(message.chat.id, '.', reply_to_message_id=result[0], business_connection_id=message.business_connection_id)
         try:
             await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=message.message_id)
-        except Exception:
-            pass
+        except Exception as e:
+            await bot.send_message(user, f"Failed to delete message: {e}")
         connection.close()
         return
     
@@ -341,8 +341,8 @@ async def business_message(message: types.Message, bot: Bot):
             await bot.send_message(user, 'Невозможно удалить последний баланс. Должна остаться хотя бы одна запись.')
         try:
             await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=message.message_id)
-        except Exception:
-            pass
+        except Exception as e:
+            await bot.send_message(user, f"Failed to delete message: {e}")
         connection.close()
         return
     
