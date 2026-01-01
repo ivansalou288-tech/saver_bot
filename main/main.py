@@ -342,7 +342,9 @@ async def business_message(message: types.Message, bot: Bot):
         else:
             await bot.send_message(user, 'Невозможно удалить последний баланс. Должна остаться хотя бы одна запись.')
         try:
-            await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=message.message_id)
+            list1 = []
+            list1.append(message.message_id)
+            await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=list1)
         except Exception as e:
             await bot.send_message(user, f"Failed to delete message: {e}")
         connection.close()
