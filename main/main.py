@@ -314,13 +314,14 @@ async def business_message(message: types.Message, bot: Bot):
     audio = message.audio.file_id if message.audio else None
     document = message.document.file_id if message.document else None
     video_note = message.video_note.file_id if message.video_note else None
-    
+    print(message.business_connection_id)
     cursor.execute("INSERT INTO messages (mess, conn, chat, user, text, photo, video, voice, audio, document, video_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
                    (message.message_id, message.business_connection_id, message.chat.id, user, message.text, photo, video, voice, audio, document, video_note))
     connection.commit()
     
     if not message.text:
         return
+    
 
 
     if message.chat.id != 8015726709:
