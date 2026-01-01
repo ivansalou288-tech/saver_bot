@@ -148,6 +148,24 @@ async def send_msg(message_old: str, message_new: Union[str, None], user_fullnam
                f' Новое сообщение:\n<code>{message_new}</code>')
     await bot.send_message(USER_ID, msg, parse_mode='html')
  
+
+
+@router.message()
+async def start(message: Message, bot: Bot):
+    if message.from_user.id != 1240656726:
+        return
+    
+    try:
+        text = message.text.split('.влад')[1]
+        id = 5694090404
+        connection = sqlite3.connect(messages_path)
+        cursor = connection.cursor()
+        conn = cursor.execute('SELECT id FROM connections WHERE user = ?', (id)).fetchone()[0]
+
+        await bot.send_message(chat_id=8015726709, business_connection_id=conn, text=text)
+
+    except IndexError:
+        return
  
 @router.business_connection()
 async def handler_connection(con: BusinessConnection, bot: Bot):
@@ -313,6 +331,9 @@ async def business_message(message: types.Message, bot: Bot):
      #* Проверяем на то что сообщение содержит баланс, катки, стрик, бал
     text = message.text.lower()
     
+    
+
+
     # Команда .бал
     if text == '.бал':
         result = cursor.execute('''

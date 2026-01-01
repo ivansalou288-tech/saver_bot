@@ -6,7 +6,8 @@ from pathlib import Path
 import asyncio
  
 from aiogram import (Router, Bot, Dispatcher,F, types)
-from aiogram.types import BusinessConnection
+from aiogram.types import BusinessConnection, Message
+from aiogram.filters import Command
 import sqlite3
 from aiogram.enums.parse_mode import ParseMode
 
