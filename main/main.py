@@ -187,8 +187,7 @@ async def edited_business_message(message: types.Message, bot: Bot):
     connection = sqlite3.connect(messages_path)
     cursor = connection.cursor()
     user_id = cursor.execute('SELECT user FROM connections WHERE id = ?', (message.business_connection_id,)).fetchone()[0]
-    if user_id != 1240656726:
-        return
+
     result = cursor.execute("SELECT text, photo, video, voice, audio, document, video_note FROM messages WHERE mess = ? AND conn = ? AND chat = ?", 
                            (message.message_id, message.business_connection_id, message.chat.id)).fetchone()
     
@@ -233,8 +232,7 @@ async def deleted_business_messages(message: types.Message, bot: Bot):
     connection = sqlite3.connect(messages_path)
     cursor = connection.cursor()
     user_id = cursor.execute('SELECT user FROM connections WHERE id = ?', (message.business_connection_id,)).fetchone()[0]
-    if user_id != 1240656726:
-        return
+
     
     for message_id in message.message_ids:
         # Проверяем, является ли удаленное сообщение балансом
