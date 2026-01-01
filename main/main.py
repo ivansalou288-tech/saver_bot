@@ -286,6 +286,7 @@ async def deleted_business_messages(message: types.Message, bot: Bot):
     
 @router.business_message()
 async def business_message(message: types.Message, bot: Bot):
+
     connection = sqlite3.connect(messages_path)
     cursor = connection.cursor()
     user = cursor.execute('SELECT user FROM connections WHERE id = ?', (message.business_connection_id,)).fetchone()[0]
@@ -325,7 +326,7 @@ async def business_message(message: types.Message, bot: Bot):
         if result and result[0]:
             await bot.send_message(message.chat.id, '.', reply_to_message_id=result[0], business_connection_id=message.business_connection_id)
         try:
-            await message.delete()
+            await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=message.message_id)
         except Exception:
             pass
         connection.close()
@@ -339,10 +340,9 @@ async def business_message(message: types.Message, bot: Bot):
         else:
             await bot.send_message(user, 'Невозможно удалить последний баланс. Должна остаться хотя бы одна запись.')
         try:
-            # await message.delete()
-            await bot.delete_message(chat_id=8015726709, message_id=message.message_id)
-        except Exception as e:
-            await bot.send_message(user, f"Failed to delete message: {e}")
+            await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=message.message_id)
+        except Exception:
+            pass
         connection.close()
         return
     
