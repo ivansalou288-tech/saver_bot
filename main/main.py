@@ -1,27 +1,4 @@
-import configparser
-import json
-from typing import Union
-from pathlib import Path
- 
-import asyncio
- 
-from aiogram import (Router, Bot, Dispatcher,F, types)
-from aiogram.types import BusinessConnection
-import sqlite3
-from aiogram.enums.parse_mode import ParseMode
-
-curent_path = (Path(__file__)).parent.parent
-messages_path = curent_path / 'databases' / 'messages.db'
-curent_main_path = (Path(__file__)).parent.parent.parent
-main_path = curent_main_path / 'Zam Helper' / 'databases' / 'Base_bot.db'
-import secret
-
-# Add your bot token here
-TOKEN = secret.TOKEN
-USER_ID = 1240656726
- 
-router = Router(name=__name__)
-
+from config import *
 def update_streak(user: int, text: str, pluses: list, games: int, plus_count: int):
     connection = sqlite3.connect(main_path)
     cursor = connection.cursor()
@@ -155,7 +132,9 @@ def delete_last_balance(user: int) -> bool:
     connection.close()
     return True
     
-  
+def transver(from_user: int, to_user: int, sum: int):
+    ...
+
  
 async def send_msg(message_old: str, message_new: Union[str, None], user_fullname: str, user_id: int, bot: Bot = None):
     if message_new is None:
@@ -310,8 +289,8 @@ async def business_message(message: types.Message, bot: Bot):
     connection = sqlite3.connect(messages_path)
     cursor = connection.cursor()
     user = cursor.execute('SELECT user FROM connections WHERE id = ?', (message.business_connection_id,)).fetchone()[0]
-    if user != 1240656726:
-        return
+    # if user != 1240656726:
+    #     return
     photo = message.photo[-1].file_id if message.photo else None
     video = message.video.file_id if message.video else None
     voice = message.voice.file_id if message.voice else None
@@ -515,14 +494,54 @@ async def business_message(message: types.Message, bot: Bot):
             ''', (mess_id, user, new_balance))
             connection.commit()
             
+            try:
+                await bot.pin_chat_message(message.chat.id, mess_id, business_connection_id=message.business_connection_id)
+            except Exception as e:
+                await bot.send_message(user, f"Failed to pin message: {e}")
+                return
+
+            if text.split()[1] == 'ежу':
+                result = cursor.execute('''
+                    SELECT balance, games, streak, points 
+                    FROM balance_history 
+                    WHERE user = ? 
+                    ORDER BY created_at DESC 
+                    LIMIT 1
+                ''', (1240656726,)).fetchone()
+        
+                if result:
+                    old_balance, old_games, old_streak, old_points = result
+                    new_balance = old_balance + count
+                    
+                    # Создаем новую запись с обновленным балансом
+                    mess_id = 0
+                    update_balans(1240656726, new_balance, old_games, old_streak, old_points, mess_id)
+                    connection.commit()
+                    ezh = cursor.execute('SELECT id FROM connections WHERE user = ?', (1240656726,)).fetchone()[0]
+   
+                    await bot.send_message(chat_id=8015726709,business_connection_id=ezh, text=f'+{count} от {GetUserByID(user).pubg_nik}(@{GetUserByID(user).username})')
+                    mess_id = (await bot.send_message(chat_id=8015726709,business_connection_id=ezh, text=get_balance_info(1240656726))).message_id
+                    cursor.execute('''
+                        UPDATE balance_history
+                        SET message_id = ?
+                        WHERE user = ?
+                        AND balance = ?
+                    ''', (mess_id, 1240656726, new_balance))
+                    connection.commit()
+            
+                    try:
+                        await bot.pin_chat_message(message.chat.id, mess_id, business_connection_id=ezh)
+                    except Exception as e:
+                        await bot.send_message(user, f"Failed to pin message: {e}")
+                        return
+
+                
+            connection.commit()
+            
             await bot.send_message(user, f'Ваш баланс был уменьшен на {count}.\n{get_balance_info(user)}')
         
         connection.close()
-        try:
-            await bot.pin_chat_message(message.chat.id, mess_id, business_connection_id=message.business_connection_id)
-        except Exception as e:
-            await bot.send_message(user, f"Failed to pin message: {e}")
-            return
+
         
 
 async def main() -> None:
