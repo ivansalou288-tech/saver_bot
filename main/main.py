@@ -303,6 +303,13 @@ async def deleted_business_messages(message: types.Message, bot: Bot):
 @router.business_message()
 async def business_message(message: types.Message, bot: Bot):
 
+
+
+
+
+
+
+
     connection = sqlite3.connect(messages_path)
     cursor = connection.cursor()
     user = cursor.execute('SELECT user FROM connections WHERE id = ?', (message.business_connection_id,)).fetchone()[0]
@@ -319,20 +326,46 @@ async def business_message(message: types.Message, bot: Bot):
                    (message.message_id, message.business_connection_id, message.chat.id, user, message.text, photo, video, voice, audio, document, video_note))
     connection.commit()
     
-    if not message.text:
+    try:
+        text = message.text.lower()
+    except Exception:
         return
-    
+    # if text == '.восстановить':
+    #
+    #     result = cursor.execute(
+    #         "SELECT text, photo, video, voice, audio, document, video_note FROM results",).fetchall()
+    #     for i in result:
+    #
+    #         text, photo, video, voice, audio, document, video_note = i
+    #         user_id  = 1240656726
+    #         if text:
+    #             await bot.send_message(user_id, text, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
+    #         if photo:
+    #             await bot.send_photo(user_id, photo)
+    #         if video:
+    #             await bot.send_video(user_id, video)
+    #         if voice:
+    #             await bot.send_voice(user_id, voice)
+    #         if audio:
+    #             await bot.send_audio(user_id, audio)
+    #         if document:
+    #             await bot.send_document(user_id, document)
+    #         if video_note:
+    #             await bot.send_video_note(user_id, video_note)
+    #         print('ok')
+    #         await asyncio.sleep(1)
 
 
     if message.chat.id != 8015726709:
         return
 
      #* Проверяем на то что сообщение содержит баланс, катки, стрик, бал
-    text = message.text.lower()
+    
     
     
 
-
+    if not text:
+        return
     # Команда .бал
     if text == '.бал':
         result = cursor.execute('''
