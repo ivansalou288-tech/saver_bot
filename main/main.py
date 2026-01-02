@@ -90,14 +90,28 @@ def get_balance_info(user: int) -> str:
         return "Данные не найдены"
     
     balance, games, streak, points = result
-    output = f"Баланс {balance}\nКатки {games}"
-    
-    if streak is not None:
-        output += f"\nСтрик {streak}"
-    if points is not None:
-        output += f"\nБаллы {points}"
-    
-    return output
+
+
+
+
+    if user == 8293082361:
+
+        output = f"Пикми Банк Пушистика\n Пикми Баланс {balance}\nПикми Катки {games}"
+        
+        if streak is not None:
+            output += f"\nПикми Стрик {streak}"
+        if points is not None:
+            output += f"\nПикми Баллы {points}"
+        return output
+    else:
+        output = f"Баланс {balance}\nКатки {games}"
+        
+        if streak is not None:
+            output += f"\nСтрик {streak}"
+        if points is not None:
+            output += f"\nБаллы {points}"
+        
+        return output
 
 
 def delete_last_balance(user: int) -> bool:
@@ -303,13 +317,6 @@ async def deleted_business_messages(message: types.Message, bot: Bot):
 @router.business_message()
 async def business_message(message: types.Message, bot: Bot):
 
-
-
-
-
-
-
-
     connection = sqlite3.connect(messages_path)
     cursor = connection.cursor()
     user = cursor.execute('SELECT user FROM connections WHERE id = ?', (message.business_connection_id,)).fetchone()[0]
@@ -406,6 +413,11 @@ async def business_message(message: types.Message, bot: Bot):
     is_balance = True
 
     # Извлекаем баланс
+
+    
+
+
+
     try:
         balance_part = text.split('баланс ')[1].split()[0]
         balance = int(balance_part.replace('₽', '').replace('р', ''))
