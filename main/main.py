@@ -9,7 +9,7 @@ def update_streak(user: int, text: str, pluses: list, games: int, plus_count: in
     streak_old = int(result[0]) if result and result[0] is not None else 0
     streak_new = streak_old
 
-    plus_number = {4: [75, 85, 30, 35], 3: [60, 70, 75, 65, 30, 35], 2: [60, 70, 75, 65, 30, 35]}
+    plus_number = {4: [75, 85, 30, 35, 40, 45], 3: [60, 70, 75, 65, 30, 35, 40, 45], 2: [60, 70, 75, 65, 30, 35, 40 ,45]}
     try:
         if games != len(pluses):
             print('first')
@@ -570,6 +570,7 @@ async def business_message(message: types.Message, bot: Bot):
                 return
 
             if text.split()[1] == 'ежу':
+                message_id_otchet = (await bot.send_message(chat_id=-1003572581696, text=f'Перевод от {GetUserByID(user).pubg_nik}(@{GetUserByID(user).username})\nСумма: <b>{count}</b>\nСтатус: в процессе', parse_mode='html')).message_id
                 result = cursor.execute('''
                     SELECT balance, games, streak, points 
                     FROM balance_history 
@@ -603,12 +604,12 @@ async def business_message(message: types.Message, bot: Bot):
                     except Exception as e:
                         await bot.send_message(user, f"Failed to pin message: {e}")
                         return
-
-                
+                    await bot.edit_message_text(chat_id=-1003572581696, message_id=message_id_otchet, text=f'Перевод от {GetUserByID(user).pubg_nik}(@{GetUserByID(user).username})\nСумма: <b>{count}</b>\nСтатус: ✅ выполнен', parse_mode='html')
+                    await bot.send_message(1240656726, f'Вам пришел перевод от {GetUserByID(user).pubg_nik}(@{GetUserByID(user).username})\n\nВаш баланс был увеличен на {count}.\n{get_balance_info(1240656726)}')
             connection.commit()
             
             await bot.send_message(user, f'Ваш баланс был уменьшен на {count}.\n{get_balance_info(user)}')
-        
+            
         connection.close()
 
         
