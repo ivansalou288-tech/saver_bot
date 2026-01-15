@@ -410,13 +410,56 @@ async def business_message(message: types.Message, bot: Bot):
         connection.close()
         return
     
-    is_balance = True
+    if text == '.set':
+        card = text.split('карта:')[1].split()[0]
+        bank = text.split('банк:')[1].split()[0]
+        name = text.split('имя:')[1].split()[0]
+        connection = sqlite3.connect(messages_path)
+        cursor = connection.cursor()
+        try:
+            cursor.execute('INSERT INTO vivod_set (user, card, bank, name) VALUES (?, ?, ?, ?)', (user, card, bank, name))
+            connection.commit()
+        except sqlite3.IntegrityError:
+            cursor.execute('UPDATE vivod_set SET card = ?, bank = ?, name = ? WHERE user = ?', (card, bank, name, user))
+            connection.commit()
+
+        await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=[message.message_id])
+        await bot.send_message(user, f'Данные для вывода сохранены\n\nКарта: {card}\nБанк: {bank}\nИмя: {name}\n\nПроверьте правильность данных')
+        connection.commit()
+
+    if text.split()[0] == '.вывод':
+        if text == '.вывод':
+            try:
+                count = int(cursor.execute('''
+                    SELECT balance
+                    FROM balance_history 
+                    WHERE user = ? 
+                    ORDER BY created_at DESC 
+                    LIMIT 1
+                ''', (user,)).fetchone[0])
+            except IndexError:
+                await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=[message.message_id])
+                return
+        else:
+            try:
+                count = int(text.split()[1])
+            except IndexError:
+                await bot.send_message(user, 'Неверный формат команды. Используйте: .вывод <количество>')
+                await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=[message.message_id])
+                return
+        card = cursor.execute('SELECT card FROM vivod_set WHERE user = ?', (user,)).fetchone()[0]
+        bank = cursor.execute('SELECT bank FROM vivod_set WHERE user = ?', (user, )).fetchone()[0]
+        name = cursor.execute('SELECT name FROM vivod_set WHERE user = ?', (user,)).fetchone()[0]
+        username = GetUserByID(user).username
+        result == f'Вывод\n\n{card}\n{bank}\n{name}\n{count}₽\n\n{username}'
+        await message.answer(user, result)
+
+
+        await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=[message.message_id])
+   
 
     # Извлекаем баланс
-
-    
-
-
+    is_balance = True
 
     try:
         balance_part = text.split('баланс ')[1].split()[0]
