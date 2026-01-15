@@ -453,9 +453,8 @@ async def business_message(message: types.Message, bot: Bot):
         username = GetUserByID(user).username
         result == f'Вывод\n\n{card}\n{bank}\n{name}\n{count}₽\n\n{username}'
         await message.answer(user, result)
-
-
         await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=[message.message_id])
+        return
    
 
     # Извлекаем баланс
