@@ -439,7 +439,7 @@ async def business_message(message: types.Message, bot: Bot):
                     WHERE user = ? 
                     ORDER BY created_at DESC 
                     LIMIT 1
-                ''', (user,)).fetchone[0])
+                ''', (user,)).fetchall[0][0])
             except IndexError:
                 await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=[message.message_id])
                 return
