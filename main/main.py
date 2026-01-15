@@ -433,13 +433,7 @@ async def business_message(message: types.Message, bot: Bot):
     if text.split()[0] == '.вывод':
         if text == '.вывод':
             try:
-                count = int(cursor.execute('''
-                    SELECT balance
-                    FROM balance_history 
-                    WHERE user = ? 
-                    ORDER BY created_at DESC 
-                    LIMIT 1
-                ''', (user,)).fetchall[0][0])
+                count = int(get_balance_info(user).split('Баланс: ')[1].split()[0].replace('₽', '').replace('р', ''))
             except IndexError:
                 await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=[message.message_id])
                 return
