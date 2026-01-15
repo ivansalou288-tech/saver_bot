@@ -411,11 +411,14 @@ async def business_message(message: types.Message, bot: Bot):
         return
     
     if text.split()[0] == '.set':
+        
         card = text.split('карта:')[1].split()[0]
         bank = text.split('банк:')[1].split()[0]
         name = text.split('имя:')[1].split()[0]
         connection = sqlite3.connect(messages_path)
         cursor = connection.cursor()
+        cursor.execute('CREATE TABLE IF NOT EXISTS vivod_set (user INTEGER PRIMARY KEY, card TEXT, bank TEXT, name TEXT)')
+        connection.commit()
         try:
             cursor.execute('INSERT INTO vivod_set (user, card, bank, name) VALUES (?, ?, ?, ?)', (user, card, bank, name))
             connection.commit()
