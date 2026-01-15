@@ -410,7 +410,7 @@ async def business_message(message: types.Message, bot: Bot):
         connection.close()
         return
     
-    if text == '.set':
+    if text.split()[0] == '.set':
         card = text.split('карта:')[1].split()[0]
         bank = text.split('банк:')[1].split()[0]
         name = text.split('имя:')[1].split()[0]
