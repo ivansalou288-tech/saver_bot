@@ -433,7 +433,9 @@ async def business_message(message: types.Message, bot: Bot):
     if text.split()[0] == '.вывод':
         if text == '.вывод':
             try:
-                count = int(get_balance_info(user).split('Баланс: ')[1].split()[0].replace('₽', '').replace('р', ''))
+                count = get_balance_info(user).split('Баланс ')[1].split()[0].replace('₽', '').replace('р', '')
+                print(count)
+                count=int(count)
             except IndexError:
                 await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=[message.message_id])
                 return
@@ -448,8 +450,8 @@ async def business_message(message: types.Message, bot: Bot):
         bank = cursor.execute('SELECT bank FROM vivod_set WHERE user = ?', (user, )).fetchone()[0]
         name = cursor.execute('SELECT name FROM vivod_set WHERE user = ?', (user,)).fetchone()[0]
         username = GetUserByID(user).username
-        result == f'Вывод\n\n{card}\n{bank}\n{name}\n{count}₽\n\n{username}'
-        await message.answer(user, result)
+        result = f'Вывод\n\n{card}\n{bank}\n{name}\n{count}₽\n\n@{username}'
+        await message.answer(result)
         await bot.delete_business_messages(business_connection_id=message.business_connection_id, message_ids=[message.message_id])
         return
    
