@@ -9,7 +9,7 @@ def update_streak(user: int, text: str, pluses: list, games: int, plus_count: in
     streak_old = int(result[0]) if result and result[0] is not None else 0
     streak_new = streak_old
 
-    plus_number = {4: [75, 85, 30, 35, 40, 45], 3: [60, 70, 75, 65, 30, 35, 40, 45], 2: [60, 70, 75, 65, 30, 35, 40 ,45]}
+    plus_number = {4: [75, 85, 30, 35, 40, 45], 3: [60, 70, 75, 65, 30, 35, ], 2: [60, 70, 75, 65, 30, 35]}
     try:
         if games != len(pluses):
             print('first')
