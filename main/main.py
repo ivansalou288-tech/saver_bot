@@ -193,7 +193,7 @@ async def handler_connection(con: BusinessConnection, bot: Bot):
     except sqlite3.IntegrityError:
         cursor.execute('UPDATE connections SET id = ? WHERE user = ?', (connection_id, user_id))
         connection.commit()
-    await bot.send_message(user_id, f'Бот подключеyн к бизнес-аккаунту. ID подключения: {connection_id}')
+    await bot.send_message(user_id, f'<tg-emoji emoji-id="5462919317832082236">✅</tg-emoji> Бот подключеyн к бизнес-аккаунту. ID подключения: {connection_id}', parse_mode=ParseMode.HTML)
 
 
 @router.edited_business_message()
@@ -353,7 +353,7 @@ async def business_message(message: types.Message, bot: Bot):
     #             await bot.send_video(user_id, video)
     #         if voice:
     #             await bot.send_voice(user_id, voice)
-    #         if audio:
+    #         if audio:wwwwwwwwwwwww
     #             await bot.send_audio(user_id, audio)
     #         if document:
     #             await bot.send_document(user_id, document)
@@ -647,6 +647,7 @@ async def business_message(message: types.Message, bot: Bot):
                         return
                     await bot.edit_message_text(chat_id=-1003572581696, message_id=message_id_otchet, text=f'Перевод от {GetUserByID(user).pubg_nik}(@{GetUserByID(user).username})\nСумма: <b>{count}</b>\nСтатус: ✅ выполнен', parse_mode='html')
                     await bot.send_message(1240656726, f'Вам пришел перевод от {GetUserByID(user).pubg_nik}(@{GetUserByID(user).username})\n\nВаш баланс был увеличен на {count}.\n{get_balance_info(1240656726)}')
+         
             connection.commit()
             
             await bot.send_message(user, f'Ваш баланс был уменьшен на {count}.\n{get_balance_info(user)}')

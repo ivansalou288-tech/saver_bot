@@ -29,6 +29,13 @@ connection = sqlite3.connect(main_path, check_same_thread=False)
 cursor = connection.cursor()
 klan = -int(cursor.execute(f"SELECT chat_id FROM chat_ids WHERE chat_name = ?", ('klan',)).fetchall()[0][0])
 
+gal = '<tg-emoji emoji-id="5462919317832082236"></tg-emoji>'
+dance_cat = '<tg-emoji emoji-id="5235465481992809720"></tg-emoji>'
+block = '<tg-emoji emoji-id="5240241223632954241"></tg-emoji>'
+voscl = '<tg-emoji emoji-id="5440660757194744323"></tg-emoji>'
+soziv = '<tg-emoji emoji-id="5424818078833715060"></tg-emoji>'
+dance_ezh = '<tg-emoji emoji-id="6262672546521423618"></tg-emoji>'
+
 
 
 #? EN: Class to extract user information from a message (reply, mention, or ID)
