@@ -8298,3 +8298,7 @@ Received SIGTERM signal
 second
 1
 second
+python3: can't open file '/var/www/panel.ezh-dev.ru/saver_bot/main.py': [Errno 2] No such file or directory
+Received SIGTERM signal
+tetetee
+(544634,)
